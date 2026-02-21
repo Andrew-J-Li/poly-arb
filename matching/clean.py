@@ -8,12 +8,12 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 KALSHI_INPUT = DATA_DIR / "kalshi_processed.csv"
 KALSHI_OUTPUT = DATA_DIR / "kalshi_clean.csv"
 
-POLY_INPUT = DATA_DIR / "polymarket_settled.csv"
+POLY_INPUT = DATA_DIR / "polymarket_processed.csv"
 POLY_OUTPUT = DATA_DIR / "polymarket_clean.csv"
 
 # Columns to clean per dataset
 KALSHI_TEXT_COLS = ["title", "rules_primary", "rules_secondary", "event_title", "event_rules"]
-POLY_TEXT_COLS = ["title", "description", "event_description"]
+POLY_TEXT_COLS = ["title", "description", "event_description", "event_title", "event_rules"]
 
 # ── Abbreviation maps ────────────────────────────────────────────────────────
 

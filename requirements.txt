@@ -1,2 +1,6 @@
 requests>=2.31
 pandas
+rapidfuzz
+scikit-learn
+sentence-transformers
+numpy

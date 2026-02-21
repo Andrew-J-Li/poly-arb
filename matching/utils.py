@@ -21,7 +21,7 @@ KALSHI_CLEAN = DATA_DIR / "kalshi_clean.csv"
 KALSHI_ORIG = DATA_DIR / "kalshi_processed.csv"
 
 POLY_CLEAN = DATA_DIR / "polymarket_clean.csv"
-POLY_ORIG = DATA_DIR / "polymarket_settled.csv"
+POLY_ORIG = DATA_DIR / "polymarket_processed.csv"
 
 # ── Non-person capitalised words to exclude ───────────────────────────────────
 
@@ -104,57 +104,6 @@ _MIN_NAME_LEN = 3
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# String generalisation (reused from kalshi/process.py)
-# ═════════════════════════════════════════════════════════════════════════════
-
-def _common_prefix_len(word_lists):
-    if not word_lists:
-        return 0
-    min_len = min(len(w) for w in word_lists)
-    for i in range(min_len):
-        if len({wl[i] for wl in word_lists}) != 1:
-            return i
-    return min_len
-
-
-def _common_suffix_len(word_lists):
-    if not word_lists:
-        return 0
-    min_len = min(len(w) for w in word_lists)
-    for i in range(1, min_len + 1):
-        if len({wl[-i] for wl in word_lists}) != 1:
-            return i - 1
-    return min_len
-
-
-def generalize_strings(strings):
-    non_empty = [s for s in strings if s.strip()]
-    if not non_empty:
-        return ""
-    if len(non_empty) == 1:
-        return non_empty[0]
-    word_lists = [s.split() for s in non_empty]
-    if len(set(non_empty)) == 1:
-        return non_empty[0]
-    prefix_len = _common_prefix_len(word_lists)
-    suffix_len = _common_suffix_len(word_lists)
-    prefix_words = word_lists[0][:prefix_len]
-    suffix_words = word_lists[0][-suffix_len:] if suffix_len > 0 else []
-    parts = []
-    if prefix_words:
-        parts.append(" ".join(prefix_words))
-    parts.append("[blank]")
-    if suffix_words:
-        parts.append(" ".join(suffix_words))
-    return " ".join(parts)
-
-
-def title_content(title: str) -> str:
-    """Return the title with [blank] removed — the 'meaningful' portion."""
-    return title.replace("[blank]", "").strip()
-
-
-# ═════════════════════════════════════════════════════════════════════════════
 # Person extraction
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -223,13 +172,8 @@ def load_kalshi_events() -> pd.DataFrame:
     events = clean.groupby("event_ticker").agg(
         event_title=("event_title", "first"),
         event_rules=("event_rules", "first"),
-        first_title=("title", "first"),  # fallback for generic generalized titles
     ).reset_index()
     events["event_text"] = (events["event_title"] + " " + events["event_rules"]).str.strip()
-
-    # Use first market title when generalized title is too short / generic
-    short_mask = events["event_title"].apply(lambda t: len(title_content(t)) < 15)
-    events.loc[short_mask, "event_title"] = events.loc[short_mask, "first_title"]
 
     # Extract persons from ORIGINAL (capitalised) titles
     orig_titles = orig.groupby("event_ticker")["title"].apply(list).reset_index()
@@ -255,21 +199,16 @@ def load_poly_events() -> pd.DataFrame:
     clean = pd.read_csv(POLY_CLEAN)
     orig = pd.read_csv(POLY_ORIG)
 
-    # Derive event_title by generalising market titles within each event
-    grouped = clean.groupby("event_ticker").agg(
-        titles=("title", list),
-        first_title=("title", "first"),
+    # Group cleaned data → event-level title & full text
+    events = clean.groupby("event_ticker").agg(
+        event_title=("event_title", "first"),
+        event_rules=("event_rules", "first"),
         event_description=("event_description", "first"),
     ).reset_index()
-    grouped["event_title"] = grouped["titles"].apply(generalize_strings)
-
-    # Use first market title when generalized title is too short / generic
-    short_mask = grouped["event_title"].apply(lambda t: len(title_content(t)) < 15)
-    grouped.loc[short_mask, "event_title"] = grouped.loc[short_mask, "first_title"]
-
-    events = grouped[["event_ticker", "event_title", "first_title", "event_description"]]
     events["event_description"] = events["event_description"].fillna("")
-    events["event_text"] = (events["event_title"] + " " + events["event_description"]).str.strip()
+    events["event_text"] = (
+        events["event_title"] + " " + events["event_rules"] + " " + events["event_description"]
+    ).str.strip()
 
     # Extract persons from ORIGINAL (capitalised) titles
     orig_titles = orig.groupby("event_ticker")["title"].apply(list).reset_index()

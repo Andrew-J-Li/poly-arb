@@ -5,6 +5,9 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 INPUT_FILE = SCRIPT_DIR.parent / "data" / "kalshi_settled.csv"
 OUTPUT_FILE = SCRIPT_DIR.parent / "data" / "kalshi_processed.csv"
 
+# Minimum meaningful content (excluding [blank]) for a generalized title
+MIN_CONTENT_LEN = 15
+
 
 def clean_newlines(df):
     """Remove all newlines from rules_primary and rules_secondary."""
@@ -73,6 +76,11 @@ def generalize_strings(strings):
     return " ".join(parts)
 
 
+def _title_content(title: str) -> str:
+    """Return the title with [blank] removed — the 'meaningful' portion."""
+    return title.replace("[blank]", "").strip()
+
+
 def add_event_columns(df):
     """Add event_title and event_rules columns."""
     event_titles = {}
@@ -80,7 +88,14 @@ def add_event_columns(df):
     event_rules_secondary = {}
 
     for event_ticker, group in df.groupby("event_ticker"):
-        event_titles[event_ticker] = generalize_strings(group["title"].tolist())
+        titles = group["title"].tolist()
+        gen_title = generalize_strings(titles)
+
+        # Fallback: if generalized title is too generic, use first market title
+        if len(_title_content(gen_title)) < MIN_CONTENT_LEN:
+            gen_title = titles[0] if titles else gen_title
+
+        event_titles[event_ticker] = gen_title
         event_rules_primary[event_ticker] = generalize_strings(
             group["rules_primary"].tolist()
         )
