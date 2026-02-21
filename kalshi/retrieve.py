@@ -6,7 +6,7 @@ from pathlib import Path
 BASE_URL = "https://api.elections.kalshi.com/trade-api/v2/markets"
 SERIES_URL = "https://api.elections.kalshi.com/trade-api/v2/series"
 SCRIPT_DIR = Path(__file__).resolve().parent
-OUTPUT_FILE = SCRIPT_DIR / "tickers" / "kalshi_settled.csv"
+OUTPUT_FILE = SCRIPT_DIR.parent / "data" / "kalshi_settled.csv"
 MAX_RETRIES = 5
 CATEGORY = "Politics"
 

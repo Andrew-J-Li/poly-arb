@@ -106,6 +106,7 @@ def main():
 
     df = clean_newlines(df)
     df = add_event_columns(df)
+    df = df[df["result"] != "scalar"]
 
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(OUTPUT_FILE, index=False)
