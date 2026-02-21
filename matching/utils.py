@@ -13,7 +13,7 @@ import pandas as pd
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-OUTPUT_DIR = DATA_DIR / "matches"
+OUTPUT_DIR = DATA_DIR / "event_matches"
 
 # ── Files ─────────────────────────────────────────────────────────────────────
 

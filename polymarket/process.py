@@ -9,6 +9,12 @@ OUTPUT_FILE = SCRIPT_DIR.parent / "data" / "polymarket_processed.csv"
 MIN_CONTENT_LEN = 15
 
 
+def strip_single_market_prefix(df):
+    """Remove the '[Single Market] ' prefix from market titles."""
+    df["title"] = df["title"].str.replace(r"^\[Single Market\]\s*", "", regex=True)
+    return df
+
+
 def clean_newlines(df):
     """Remove all newlines from description and event_description."""
     for col in ("description", "event_description"):
@@ -107,6 +113,7 @@ def main():
     df = pd.read_csv(INPUT_FILE)
     print(f"Loaded {len(df)} markets across {df['event_ticker'].nunique()} events")
 
+    df = strip_single_market_prefix(df)
     df = clean_newlines(df)
     df = add_event_columns(df)
 
